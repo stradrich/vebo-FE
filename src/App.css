@@ -36,3 +36,33 @@
     transform: rotate(360deg);
   }
 }
+
+/* Overlay to darken the background */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Bring to the front */
+}
+
+/* Popup container style */
+.popup-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 700px; /* Set width of the form */
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for effect */
+}
+
+/* Close button style */
+button {
+  cursor: pointer;
+  margin-top: 10px;
+}
