@@ -107,7 +107,7 @@ const InventoryList = () => {
           </div>
 
           <div className="mt-4 border-t pt-4">
-            <div className="grid grid-cols-4 gap-4 text-sm">
+            <div className="ml-4 grid grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Stock Level</p>
                 <p className="font-medium">{part.stockLevel}</p>
@@ -128,7 +128,7 @@ const InventoryList = () => {
           </div>
 
           <div className='mt-4 border-t pt-4'>
-          <Box sx={{ width: 600, ml: 23, mt: 5}}>
+          <Box sx={{ width: 600, ml: 1, mt: 5}}>
             <Typography id="input-slider" gutterBottom>
               Tracking shipment
             </Typography>

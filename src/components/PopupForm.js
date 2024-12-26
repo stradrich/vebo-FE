@@ -9,12 +9,30 @@ import { Center } from '@chakra-ui/react';
 
 function PopupForm({ onClose }) {
   const [partName, setPartName] = useState('');
+  const [formData, setFormData] = useState({}); // Store all form data here
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    console.log('Form submitted:', partName);
-    onClose(); // Close the form after submission
-  };
+    // Function to update form data from child
+    const updateFormData = (id, value) => {
+        setFormData((prev) => ({ ...prev, [id]: value }));
+        console.log(`Updated field ${id}:`, { [id]: value });
+      };
+
+    // Handle submissions
+      const handleSubmit = (event) => {
+        event.preventDefault();
+    
+        // Log and check form data before submission
+        console.log('Final form data before submission:', formData);
+    
+        // Ensure formData is not empty
+        if (Object.keys(formData).length === 0) {
+          console.error('Form is empty! Please fill out all fields.');
+          return;
+        }
+    
+        console.log('Form submitted:', formData);
+        onClose(); // Close the form after submission
+      };
 
   return (
     <div className="popup-overlay">
@@ -48,7 +66,7 @@ function PopupForm({ onClose }) {
               overflowY: 'auto', // Enable vertical scrolling
             }}
           >
-            <SelectInput />
+            <SelectInput updateFormData={updateFormData}/>
           </div>
           {/* <button
             type="submit"
@@ -58,7 +76,7 @@ function PopupForm({ onClose }) {
           </button> */}
 
         <Stack direction="row" sx={{marginLeft: 36, marginRight: 30}}>
-            <Button variant="outlined">Submit</Button>
+            <Button type="submit" variant="outlined">Submit</Button>
         </Stack>
         </form>
       </div>

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
@@ -56,13 +56,95 @@ const currencies = [
     },
   ];
 
-export default function SelectTextFields() {
+export default function SelectTextFields({updateFormData, onFileChange}) {
+    const [formData, setFormData] = useState({
+        sku: '',
+        status: '',
+        description: '',
+        supplier: '',
+        costPrice: '',
+        sellingPrice: '',
+        photoUrl: '',
+        partType: '',
+        controlled: '',
+        controlStock: '',
+        stockLevel: 10,
+        reservedStock: 5,
+        availableStock: '',
+        minStockLevel: ','
+    })
+
+    const [isControlled, setIsControlled] = useState(false);
+
+    const handleControlToggle = (event) => {
+        setIsControlled(event.target.value === 'YES');
+    }
+
+    const [invalidFields, setInvalidFields] = useState({
+        stockLevel: false,
+        reservedStock: false,
+        minStockLevel: false,
+        sellingPrice: false,
+    });
+
+    // Input change from child
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+
+        if (!name) {
+            console.error("Name attribute is missing for input field.");
+            return;
+        }
+
+         // Validate numeric fields
+        if (name === 'input-stock-level' || name === 'input-reserved-stock' || name === 'input-minimum-stock' || name === 'input-amount') {
+            const isValidNumber = !isNaN(value) && value !== '';
+            setInvalidFields(prev => ({
+                ...prev,
+                [name]: !isValidNumber
+            }));
+        }
+
+        // updateFormData((prev) => ({...prev, [id]: value }));
+        updateFormData(name, value);
+        console.log('Input value from SelectInput.js: ',value); 
+    }
+
+    // Handling POST http://localhost:8080/parts
+    // const handleSubmit = async (event) => {
+    //     console.log("Form data:", formData);
+        
+
+    // }
+
+    // HANDLING AUTO CALCULATION
+    const availableStock = formData.stockLevel - formData.reservedStock;
+    
+
+    // HANDLING COMBINED FUNCTIONS
+    const handleCombinedChange = (event) => {
+        handleControlToggle(event);
+        handleInputChange(event);
+    };
+
+    // HANDLING UPLOAD PHOTO
+    const [uploadedFileName, setUploadedFileName] = useState('No file selected');
+
+    const handleFileChange = (fileName) => {
+        setUploadedFileName(fileName); // Update the state with the file name
+        updateFormData('photoUrl', fileName);  // Update photoUrl in the form data
+    };
+    
+    
+
+
   return (
     <Box
       component="form"
       sx={{ '& .MuiTextField-root': { m: 1, width: '30ch' } }}
       noValidate
       autoComplete="off"
+    //   onSubmit={handleSubmit}
     >
         {/* 
             "sku": "",
@@ -86,18 +168,23 @@ export default function SelectTextFields() {
             {/* SKU */}
             <TextField
                 id="input-sku"
+                name="input-sku"
                 label="mandatory"
                 defaultValue="sku i.e 33322406288"
                 helperText="The last 2 characters of a SKU will always be the supplier code!"
                 onFocus={(e) => e.target.value === "sku i.e 33322406288" && (e.target.value = "")}
+                onChange={handleInputChange}
             />
+
             {/* STATUS */}
             <TextField
-            id="outlined-select-status"
+            id="select-status"
+            name="select-status"
             select
             label="Select Current Status"
-            defaultValue="NO"
+            defaultValue="ACTIVE"
             helperText=""
+            onChange={handleInputChange}
             >
             {status.map((status) => (
                 <MenuItem key={status.value} value={status.value}>
@@ -109,19 +196,23 @@ export default function SelectTextFields() {
             {/* DESCRIPTION 40 char max mandatory */}  
             <TextField
                 id="input-description"
+                name="input-description"
                 label="mandatory"
                 defaultValue="i.e Mini W11 Main pulley (China)"
                 helperText="Describe inventory"
                 onFocus={(e) => e.target.value === "i.e Mini W11 Main pulley (China)" && (e.target.value = "")}
+                onChange={handleInputChange}
             />
 
             {/* SUPPLIER */}  
             <TextField
-            id="outlined-select-supplier"
+            id="select-supplier"
+            name="select-supplier"
             select
             label="Select Supplier"
-            defaultValue="OTHERS"
+            // defaultValue="etc"
             helperText=""
+            onChange={handleInputChange}
             >
             {supplier.map((supplier) => (
                 <MenuItem key={supplier.value} value={supplier.value}>
@@ -132,20 +223,26 @@ export default function SelectTextFields() {
 
             {/* COST PRICE */} {/* SELLING PRICE*/}  
             <TextField
-                sx={{ }}
-                id="input-sku"
+                id="input-amount"
+                name="input-amount"
                 label="Amount"
                 defaultValue="MYR"
-                helperText="Input initial price only | Cost price will be generated automatically"
+                helperText={invalidFields['input-amount'] ? "Please enter a valid number!" : " "}
+                // helperText="Input initial price only; Cost price will be generated automatically"
                 onFocus={(e) => e.target.value === "MYR" && (e.target.value = "")}
+                onChange={handleInputChange}
+                // error={invalidFields.sellingPrice}
+                error={invalidFields['input-amount']}
             />
 
             <TextField
-            id="outlined-select-option"
+            id="select-option"
+            name="select-option"
             select
             label="Select Handling"
             defaultValue="NO"
             helperText="Is this a controlled part? High value or important parts require special handling procedure"
+            onChange={handleInputChange}
             >
             {options.map((options) => (
                 <MenuItem key={options.value} value={options.value}>
@@ -155,17 +252,25 @@ export default function SelectTextFields() {
             </TextField>  
 
             {/* UPLOAD PHOTO URL */}  
-            <UploadButton/>
+            <UploadButton  
+            id="photoUrl"
+            name="photoUrl"
+            onFileChange={handleFileChange}
+            onChange={onFileChange}
+            />
+            <span>{uploadedFileName}</span>
         </div>
 
         <div>
             {/* PART TYPE */}  
             <TextField
-            id="outlined-select-partType"
+            id="select-partType"
+            name="select-partType"
             select
             label="Select Part Type"
-            defaultValue="others"
+            // defaultValue="OTHERS"
             helperText=""
+            onChange={handleInputChange}
             >
             {partType.map((partType) => (
                 <MenuItem key={partType.value} value={partType.value}>
@@ -176,11 +281,13 @@ export default function SelectTextFields() {
 
             {/* CONTROLLED PART */}
             <TextField
-            id="outlined-select-options"
+            id="select-options"
+            name="select-options"
             select
             label="Toggle Control Stock Calculation"
             defaultValue="NO"
             helperText="YES to ENABLE (Stock level, Reserve Stock, Available Stock, Minimum Stock)"
+            onChange={handleCombinedChange}
             >
             {options.map((options) => (
                 <MenuItem key={options.value} value={options.value}>
@@ -189,37 +296,58 @@ export default function SelectTextFields() {
             ))}
             </TextField> 
             
+            {/* TOGGLING EFFECT */}
             {/* STOCK LEVEL */}
             <TextField
                 id="input-stock-level"
+                name="input-stock-level"
                 label="Stock Level"
-                defaultValue="10"
-                helperText="Please enter a number!"
-                disabled
+                defaultValue={formData.stockLevel}
+                // helperText="Please enter a number!"
+                helperText={invalidFields['input-stock-level'] ? "Please enter a valid number!" : " "}
+                disabled={!isControlled}
+                onChange={handleInputChange}
+                // error={invalidFields.stockLevel}
+                error={invalidFields["input-stock-level"]}
             />
+
             {/* RESERVED STOCK */}
             <TextField
                 id="input-reserved-stock"
+                name="input-reserved-stock"
                 label="Reserved Stock"
-                defaultValue="10"
-                helperText="Please enter a number!"
-                disabled
+                defaultValue={formData.reservedStock}
+                // helperText="Please enter a number!"
+                helperText={invalidFields['input-reserved-stock'] ? "Please enter a valid number!" : " "}
+                disabled={!isControlled}
+                onChange={handleInputChange}
+                // error={invalidFields.reservedStock}
+                error={invalidFields['input-reserved-stock']}
             />
+
             {/* AVAILABLE STOCK */}
             <TextField
                 id="input-available-stock"
+                name="input-available-stock"
                 label="Available Stock"
-                defaultValue="0"
-                helperText=""
+                defaultValue={availableStock} // compute dynamically
+                helperText="This is calculated automatically!"
                 disabled
+                onChange={handleInputChange}
             />
+
             {/* MINUMUM STOCK */}
             <TextField
                 id="input-minimum-stock"
+                name="input-minimum-stock"
                 label="Minimum Stock"
-                defaultValue="10"
-                helperText="Please enter a number!"
-                disabled
+                defaultValue=""
+                // helperText="Please enter a number!"
+                helperText={invalidFields['input-minimum-stock'] ? "Please enter a valid number!" : " "}
+                disabled={!isControlled}
+                onChange={handleInputChange}
+                // error={invalidFields.minStockLevel}
+                error={invalidFields['input-minimum-stock']}
             />
         </div>
       </div>
