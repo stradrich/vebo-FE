@@ -44,16 +44,25 @@ const InventoryList = () => {
   // ];
 
   const [parts, setParts] = useState([]);
-
-  // Fetch all parts on component mount
-  useEffect(() => {
-    fetch("http://localhost:8080/parts")
-      .then((response) => response.json())
-      .then((data) => setParts(data))
-      .catch((error) => console.error("Error fetching parts:", error));
-      console.log(parts);
-      
-  }, []);
+  
+    // Fetch all parts on component mount
+    useEffect(() => {
+      fetch("http://localhost:8080/parts")
+        .then((response) => response.json())
+        .then((data) => {
+          const updatedParts = data.map(part => {
+            console.log(part.photoUrl);  // Log the photoUrl here
+            return {
+              ...part,
+              photoUrl: part.photoUrl && part.photoUrl !== 'null' 
+                ? `http://localhost:8080/uploads/photos/${part.sku}/${part.photoUrl}`
+                : "https://cdn1.npcdn.net/images/1628147456banner2.gif"
+            };
+          });
+          setParts(updatedParts);
+        })
+        .catch((error) => console.error("Error fetching parts:", error));
+    }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -64,8 +73,12 @@ const InventoryList = () => {
               {/* Image Container */}
               <div className="relative h-40 w-40 rounded-lg overflow-hidden group">
               <img
-                src={part.photoUrl}
-                alt={part.description}
+                src={part.photoUrl && part.photoUrl !== 'null' && part.photoUrl !== null 
+                  ? (part.photoUrl.startsWith('http') 
+                      ? part.photoUrl // Use the URL directly if it's already a full URL
+                      : `http://localhost:8080/uploads/photos/${part.sku}/${part.photoUrl}`) // Append the base URL if it's just a filename
+                  : "https://cdn1.npcdn.net/images/1628147456banner2.gif"} // Default image if photoUrl is null
+                alt={part.photoUrl ? part.photoUrl : "Default Image"}
                 fill
                 className="object-cover transition-all duration-300 ease-in-out group-hover:scale-110 group-hover:inset-0 group-hover:top-0 group-hover:left-0 group-hover:w-full group-hover:h-full"
               />

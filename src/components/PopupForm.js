@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import CancelIcon from '@mui/icons-material/Cancel';
 import Stack from '@mui/material/Stack';
@@ -8,31 +8,6 @@ import SelectInput from '../components/SelectInput';
 import { Center } from '@chakra-ui/react';
 
 function PopupForm({ onClose }) {
-  const [partName, setPartName] = useState('');
-  const [formData, setFormData] = useState({}); // Store all form data here
-
-    // Function to update form data from child
-    const updateFormData = (id, value) => {
-        setFormData((prev) => ({ ...prev, [id]: value }));
-        console.log(`Updated field ${id}:`, { [id]: value });
-      };
-
-    // Handle submissions
-      const handleSubmit = (event) => {
-        event.preventDefault();
-    
-        // Log and check form data before submission
-        console.log('Final form data before submission:', formData);
-    
-        // Ensure formData is not empty
-        if (Object.keys(formData).length === 0) {
-          console.error('Form is empty! Please fill out all fields.');
-          return;
-        }
-    
-        console.log('Form submitted:', formData);
-        onClose(); // Close the form after submission
-      };
 
   return (
     <div className="popup-overlay">
@@ -52,8 +27,15 @@ function PopupForm({ onClose }) {
           </button>
         </div>
     
-        <form onSubmit={handleSubmit}>
+        <form 
+        // onSubmit={handleFormSubmit}
+        >
           <div className="mb-4">
+              {/* File input */}
+              {/* <input
+              type="file"
+              onChange={(e) => setFormData({ ...formData, photoFile: e.target.files[0] })}
+            /> */}
           </div>
           {/* <div className="mb-4">
             <SelectInput/>
@@ -66,7 +48,7 @@ function PopupForm({ onClose }) {
               overflowY: 'auto', // Enable vertical scrolling
             }}
           >
-            <SelectInput updateFormData={updateFormData}/>
+            <SelectInput/>
           </div>
           {/* <button
             type="submit"
@@ -75,9 +57,11 @@ function PopupForm({ onClose }) {
             Submit
           </button> */}
 
-        <Stack direction="row" sx={{marginLeft: 36, marginRight: 30}}>
-            <Button type="submit" variant="outlined">Submit</Button>
-        </Stack>
+        {/* <Stack direction="row" sx={{marginLeft: 36, marginRight: 30}}>
+            <Button type="submit" variant="outlined">
+              Submit
+            </Button>
+        </Stack> */}
         </form>
       </div>
     </div>

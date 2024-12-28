@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import UploadButton from '../components/UploadButton';
+import Button from '@mui/material/Button'; // Import MUI Button
 
 const options = [
     { value: 'YES', label: 'YES'},
@@ -56,7 +57,7 @@ const currencies = [
     },
   ];
 
-export default function SelectTextFields({updateFormData, onFileChange}) {
+export default function SelectTextFields({onClose}) {
     const [formData, setFormData] = useState({
         sku: '',
         status: '',
@@ -64,14 +65,14 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
         supplier: '',
         costPrice: '',
         sellingPrice: '',
-        photoUrl: '',
+        photoUrl: 'https://cdn1.npcdn.net/images/1628147456banner2.gif',
         partType: '',
         controlled: '',
         controlStock: '',
         stockLevel: 10,
         reservedStock: 5,
         availableStock: '',
-        minStockLevel: ','
+        minStockLevel: ''
     })
 
     const [isControlled, setIsControlled] = useState(false);
@@ -89,33 +90,133 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
 
     // Input change from child
     const handleInputChange = (event) => {
-        const { name, value } = event.target;
+        const { id, name, value, files } = event.target;
 
         if (!name) {
             console.error("Name attribute is missing for input field.");
             return;
         }
 
-         // Validate numeric fields
-        if (name === 'input-stock-level' || name === 'input-reserved-stock' || name === 'input-minimum-stock' || name === 'input-amount') {
-            const isValidNumber = !isNaN(value) && value !== '';
+           // If it's a file input, handle it differently
+        if (name === "photoUrl" && files && files.length > 0) {
+            const file = files[0];  // The first file selected
+            console.log('File selected:', file);
+            setFormData((prev) => ({
+                ...prev,
+                photoUrl: file,  // Update photoUrl in state if needed
+            }));
+            return;  // Early return to prevent the rest of the code from executing
+        }
+
+        // Validate numeric fields only if the field expects numeric values
+        const numericFields = ['stockLevel', 'reservedStock', 'minStockLevel', 'costPrice'];
+        if (numericFields.includes(name)) {
+            // Check if the value contains only numbers (possibly with a decimal point)
+            const isValidNumber = /^\d*\.?\d+$/.test(value);
+
+            // Update the invalidFields state based on validation
             setInvalidFields(prev => ({
                 ...prev,
                 [name]: !isValidNumber
             }));
+
+            console.log('Validation for ' + name + ' isValidNumber:', isValidNumber);
+
+            if (!isValidNumber) {
+                console.error(`${name} is invalid: ${value}`);
+                return; // Don't update state if invalid
+            }
         }
 
-        // updateFormData((prev) => ({...prev, [id]: value }));
-        updateFormData(name, value);
+          // Update formData with the new value
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
+
+        // Log for debugging
+        console.log(`Updated formData:`, { ...formData, [name]: value });
+
+        // updateFormData(name, value);
         console.log('Input value from SelectInput.js: ',value); 
     }
 
+    // Consolidate all input fields (! photo is a file input)
     // Handling POST http://localhost:8080/parts
-    // const handleSubmit = async (event) => {
-    //     console.log("Form data:", formData);
+    const handleSubmit = async () => {
         
+        // Consolidate the "form data"
+        const consolidatedData = {
+            sku: formData.sku,
+            status: formData.status,
+            description: formData.description,
+            supplier: formData.supplier,
+            costPrice: formData.costPrice,
+            sellingPrice: formData.sellingPrice,
+            photoUrl: formData.photoUrl.name,
+            partType: formData.partType,
+            controlled: formData.controlled,
+            controlStock: formData.controlStock,
+            stockLevel: formData.stockLevel,
+            reservedStock: formData.reservedStock,
+            availableStock: availableStock,
+            minStockLevel: formData.minStockLevel,
+        };
 
-    // }
+        console.log("SKU before fetch:", formData.sku);
+        
+        // Log out consolidated data
+        console.log('Consolidated Data:', consolidatedData);
+    
+        try {
+            // Step 1: Create the part by POSTing to /parts
+            const createPartResponse = await fetch('http://localhost:8080/parts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(consolidatedData),
+            });
+    
+            if (!createPartResponse.ok) {
+                throw new Error('Failed to create part');
+            }
+    
+            console.log('Part created successfully:', await createPartResponse.json());
+    
+            console.log(`http://localhost:8080/parts/${formData.sku}/uploadPhoto`);
+            
+            // HANDLING UPLOAD PHOTO
+            // Step 2: Upload the photo if it exists
+            if (formData.photoUrl instanceof File) {
+                const uploadUrl = `http://localhost:8080/parts/${formData.sku}/uploadPhoto`;
+                const fileUploadForm = new FormData();
+                fileUploadForm.append('file', formData.photoUrl);
+    
+                const uploadResponse = await fetch(uploadUrl, {
+                    method: 'POST',
+                    body: fileUploadForm,
+                });
+    
+                if (!uploadResponse.ok) {
+                    throw new Error('File upload failed');
+                }
+    
+                const uploadResult = await uploadResponse.json();
+                console.log('File uploaded successfully. URL:', uploadResult.url);
+            } else {
+                console.warn('No file provided for photoUrl.');
+            }
+        } catch (error) {
+            console.error('Error during submission:', error);
+        }
+        // Now pass the consolidatedData to PopupForm
+        // Pass the data to PopupForm.js to handle submission
+        // Assuming onSubmit is a prop passed from PopupForm
+        window.location.reload();
+        
+    };
+    
 
     // HANDLING AUTO CALCULATION
     const availableStock = formData.stockLevel - formData.reservedStock;
@@ -128,16 +229,27 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
     };
 
     // HANDLING UPLOAD PHOTO
-    const [uploadedFileName, setUploadedFileName] = useState('No file selected');
+    // const uploadFile = async (sku, file) => {
+    //     console.log("SKU before fetch:", formData.sku);
+        
+    //     const formData = new FormData();
+    //     formData.append('file', file);
 
-    const handleFileChange = (fileName) => {
-        setUploadedFileName(fileName); // Update the state with the file name
-        updateFormData('photoUrl', fileName);  // Update photoUrl in the form data
-    };
+    //     const response = await fetch(`http://localhost:8080/parts/${formData.sku}/uploadPhoto`, {
+    //         method: 'POST',
+    //         body: formData,
+    //     });
+    
+    //     if (!response.ok) {
+    //         throw new Error('File upload failed');
+    //     }
+    
+    //     const data = await response.json();
+    //     return data.fileUrl;  // Assuming the server returns a URL for the uploaded file
+    // };
     
     
-
-
+    
   return (
     <Box
       component="form"
@@ -167,22 +279,20 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
         <div>
             {/* SKU */}
             <TextField
-                id="input-sku"
-                name="input-sku"
-                label="mandatory"
-                defaultValue="sku i.e 33322406288"
-                helperText="The last 2 characters of a SKU will always be the supplier code!"
-                onFocus={(e) => e.target.value === "sku i.e 33322406288" && (e.target.value = "")}
+                name="sku"
+                label="mandatory sku"
+                value={formData.sku} 
+                helperText="The last 2 characters of a SKU will always be the supplier code! i.e 33322406288"
+                // onFocus={(e) => e.target.value === "sku i.e 33322406288" && (e.target.value = "")}
                 onChange={handleInputChange}
             />
 
             {/* STATUS */}
             <TextField
-            id="select-status"
-            name="select-status"
+            name="status"
             select
             label="Select Current Status"
-            defaultValue="ACTIVE"
+            value={formData.status} 
             helperText=""
             onChange={handleInputChange}
             >
@@ -195,22 +305,21 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
 
             {/* DESCRIPTION 40 char max mandatory */}  
             <TextField
-                id="input-description"
-                name="input-description"
-                label="mandatory"
-                defaultValue="i.e Mini W11 Main pulley (China)"
-                helperText="Describe inventory"
-                onFocus={(e) => e.target.value === "i.e Mini W11 Main pulley (China)" && (e.target.value = "")}
+                name="description"
+                label="mandatory desciption"
+                value={formData.description} 
+                helperText="Describe inventory, i.e Mini W11 Main pulley (China)"
+                // onFocus={(e) => e.target.value === "i.e Mini W11 Main pulley (China)" && (e.target.value = "")}
                 onChange={handleInputChange}
             />
 
             {/* SUPPLIER */}  
             <TextField
-            id="select-supplier"
-            name="select-supplier"
+            name="supplier"
             select
             label="Select Supplier"
             // defaultValue="etc"
+            value={formData.supplier} 
             helperText=""
             onChange={handleInputChange}
             >
@@ -223,24 +332,21 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
 
             {/* COST PRICE */} {/* SELLING PRICE*/}  
             <TextField
-                id="input-amount"
-                name="input-amount"
-                label="Amount"
-                defaultValue="MYR"
-                helperText={invalidFields['input-amount'] ? "Please enter a valid number!" : " "}
-                // helperText="Input initial price only; Cost price will be generated automatically"
+                name="costPrice"
+                label="Amount (MYR)"
+                value={formData.costPrice} 
+                helperText={invalidFields['costPrice'] ? "Please enter a valid number!" : " "}
                 onFocus={(e) => e.target.value === "MYR" && (e.target.value = "")}
                 onChange={handleInputChange}
-                // error={invalidFields.sellingPrice}
-                error={invalidFields['input-amount']}
+                error={invalidFields['costPrice']}
             />
 
+            {/* CONTROLLED PART */}
             <TextField
-            id="select-option"
-            name="select-option"
+            name="controlled"
             select
             label="Select Handling"
-            defaultValue="NO"
+            value={formData.controlled} 
             helperText="Is this a controlled part? High value or important parts require special handling procedure"
             onChange={handleInputChange}
             >
@@ -252,23 +358,26 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
             </TextField>  
 
             {/* UPLOAD PHOTO URL */}  
+            <div className='grid grid-cols-2 gap-4'>
             <UploadButton  
+            type="file"
             id="photoUrl"
             name="photoUrl"
-            onFileChange={handleFileChange}
-            onChange={onFileChange}
+            onChange={handleInputChange}
             />
-            <span>{uploadedFileName}</span>
+            <span className="mt-5">
+                {formData.photoUrl.name}
+            </span>
+            </div>
         </div>
 
         <div>
             {/* PART TYPE */}  
             <TextField
-            id="select-partType"
-            name="select-partType"
+            name="partType"
             select
             label="Select Part Type"
-            // defaultValue="OTHERS"
+            value={formData.partType} 
             helperText=""
             onChange={handleInputChange}
             >
@@ -279,13 +388,13 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
             ))}
             </TextField> 
 
-            {/* CONTROLLED PART */}
+           
+             {/* TOGGLING EFFECT */}
             <TextField
-            id="select-options"
-            name="select-options"
+            name="controlStock"
             select
             label="Toggle Control Stock Calculation"
-            defaultValue="NO"
+            value={formData.controlStock} 
             helperText="YES to ENABLE (Stock level, Reserve Stock, Available Stock, Minimum Stock)"
             onChange={handleCombinedChange}
             >
@@ -296,39 +405,36 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
             ))}
             </TextField> 
             
-            {/* TOGGLING EFFECT */}
+           
             {/* STOCK LEVEL */}
             <TextField
-                id="input-stock-level"
-                name="input-stock-level"
+                name="stockLevel"
                 label="Stock Level"
-                defaultValue={formData.stockLevel}
+                value={formData.stockLevel}
                 // helperText="Please enter a number!"
-                helperText={invalidFields['input-stock-level'] ? "Please enter a valid number!" : " "}
+                helperText={invalidFields['stockLevel'] ? "Please enter a valid number!" : " "}
                 disabled={!isControlled}
                 onChange={handleInputChange}
                 // error={invalidFields.stockLevel}
-                error={invalidFields["input-stock-level"]}
+                error={invalidFields["stockLevel"]}
             />
 
             {/* RESERVED STOCK */}
             <TextField
-                id="input-reserved-stock"
-                name="input-reserved-stock"
+                name="reservedStock"
                 label="Reserved Stock"
-                defaultValue={formData.reservedStock}
+                value={formData.reservedStock}
                 // helperText="Please enter a number!"
-                helperText={invalidFields['input-reserved-stock'] ? "Please enter a valid number!" : " "}
+                helperText={invalidFields['reservedStock'] ? "Please enter a valid number!" : " "}
                 disabled={!isControlled}
                 onChange={handleInputChange}
                 // error={invalidFields.reservedStock}
-                error={invalidFields['input-reserved-stock']}
+                error={invalidFields['reservedStock']}
             />
 
             {/* AVAILABLE STOCK */}
             <TextField
-                id="input-available-stock"
-                name="input-available-stock"
+                name="availableStock"
                 label="Available Stock"
                 defaultValue={availableStock} // compute dynamically
                 helperText="This is calculated automatically!"
@@ -338,19 +444,44 @@ export default function SelectTextFields({updateFormData, onFileChange}) {
 
             {/* MINUMUM STOCK */}
             <TextField
-                id="input-minimum-stock"
-                name="input-minimum-stock"
+                name="minStockLevel"
                 label="Minimum Stock"
-                defaultValue=""
+                value={formData.minStockLevel}
                 // helperText="Please enter a number!"
-                helperText={invalidFields['input-minimum-stock'] ? "Please enter a valid number!" : " "}
+                helperText={invalidFields['minStockLevel'] ? "Please enter a valid number!" : " "}
                 disabled={!isControlled}
                 onChange={handleInputChange}
                 // error={invalidFields.minStockLevel}
-                error={invalidFields['input-minimum-stock']}
+                error={invalidFields['minStockLevel']}
             />
         </div>
       </div>
+
+      <Button
+            onClick={handleSubmit}
+            variant="outlined"
+            color="primary"
+            sx={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                borderWidth: '1px',
+                borderColor: '#1976d2',
+                fontWeight: 'bold',
+                textTransform: 'uppercase',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                    backgroundColor: '#1976d2',
+                    color: '#fff',
+                    borderColor: '#1976d2',
+                    boxShadow: '0 4px 10px rgba(0, 123, 255, 0.2)', // Gloss effect
+                },
+                '&:focus': {
+                    boxShadow: '0 0 0 2px rgba(25, 118, 210, 0.5)', // Focus effect for accessibility
+                }
+            }}
+        >
+            Submit
+        </Button>
     </Box>
   );
 }
