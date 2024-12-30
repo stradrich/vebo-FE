@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import UploadButton from '../components/UploadButton';
-import Button from '@mui/material/Button'; // Import MUI Button
+import Button from '@mui/material/Button';
 
 const options = [
     { value: 'YES', label: 'YES'},
@@ -57,7 +57,7 @@ const currencies = [
     },
   ];
 
-export default function SelectTextFields({onClose}) {
+export default function SelectTextFields() {
     const [formData, setFormData] = useState({
         sku: '',
         status: '',
@@ -145,6 +145,8 @@ export default function SelectTextFields({onClose}) {
     // Handling POST http://localhost:8080/parts
     const handleSubmit = async () => {
         
+        console.log(formData.photoUrl.name);
+        
         // Consolidate the "form data"
         const consolidatedData = {
             sku: formData.sku,
@@ -177,6 +179,14 @@ export default function SelectTextFields({onClose}) {
                 },
                 body: JSON.stringify(consolidatedData),
             });
+
+            if (createPartResponse.status === 409) {
+                // Handle conflict (409) error
+                const responseBody = await createPartResponse.text();  // Get the response body
+                console.warn('Error: Conflict - Part with SKU already exists:', responseBody);  // Log it out
+                alert(`Error: ${responseBody}`);  // Display it to the user (you can use a more refined UI for this)
+                return;  // Exit the function early if there is a conflict
+            }
     
             if (!createPartResponse.ok) {
                 throw new Error('Failed to create part');
@@ -213,7 +223,7 @@ export default function SelectTextFields({onClose}) {
         // Now pass the consolidatedData to PopupForm
         // Pass the data to PopupForm.js to handle submission
         // Assuming onSubmit is a prop passed from PopupForm
-        window.location.reload();
+        // window.location.reload();
         
     };
     
@@ -358,16 +368,18 @@ export default function SelectTextFields({onClose}) {
             </TextField>  
 
             {/* UPLOAD PHOTO URL */}  
-            <div className='grid grid-cols-2 gap-4'>
-            <UploadButton  
-            type="file"
-            id="photoUrl"
-            name="photoUrl"
-            onChange={handleInputChange}
-            />
-            <span className="mt-5">
-                {formData.photoUrl.name}
-            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <UploadButton  
+                    type="file"
+                    id="photoUrl"
+                    name="photoUrl"
+                    onChange={handleInputChange}
+                    />
+                </div>            
+                <span className="mt-5 mb-10">
+                    {formData.photoUrl.name}
+                </span>
             </div>
         </div>
 

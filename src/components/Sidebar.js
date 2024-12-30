@@ -28,6 +28,9 @@ export function Sidebar({ className }) {
           <Link to="#" className="flex items-center rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-200 hover:text-gray-900">
             Settings
           </Link>
+          <Link to="http://localhost:8080/home-page" className="flex items-center rounded-lg px-3 py-10 text-gray-700 hover:bg-gray-200 hover:text-gray-900">
+            Log Out
+          </Link>
         </div>
       </div>
     </div>

@@ -14,6 +14,31 @@ function App() {
     setFormOpen(!isFormOpen); // Function to toggle form visibility
   };
 
+  const [searchInput, setSearchInput] = useState(''); // State to track search input
+  const [searchResult, setSearchResult] = useState(null); // State to hold the fetched data
+  const [error, setError] = useState(null); // State to handle API errors
+
+    // Handle search input changes
+    const handleSearchInputChange = (e) => {
+      setSearchInput(e.target.value);
+    };
+  
+    // Handle search action
+    const handleSearch = async () => {
+      try {
+        const response = await fetch(`http://localhost:8080/parts/${searchInput}`);
+        if (!response.ok) {
+          throw new Error('Part not found!');
+        }
+        const data = await response.json();
+        setSearchResult(data);
+        setError(null); // Clear any previous error
+      } catch (err) {
+        setError(err.message);
+        setSearchResult(null); // Clear any previous result
+      }
+    };
+
   return (
     <Router>
       <div className="flex h-screen overflow-hidden">
@@ -21,7 +46,7 @@ function App() {
         <Sidebar className="w-64 flex-shrink-0 border-r hidden md:block" />
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div sx={{widht: "100%"}} className="flex-1 flex flex-col">
           {/* Header */}
           <header className="flex items-center justify-between px-6 py-4 border-b">
             <h1 className="text-xl font-semibold">Automotive Parts</h1>
@@ -29,6 +54,7 @@ function App() {
             <div className="flex items-center space-x-4">
               {/* Search */}
               <input
+              onClick={handleSearch}
                 type="search"
                 placeholder="Search products..."
                 className="px-3 py-2 border rounded-md"
